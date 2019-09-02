@@ -68,9 +68,15 @@ contract TopUpModule is Module {
         bytes memory mintData = abi.encodeWithSignature("mint(uint256)", amount);
         require(manager.execTransactionFromModule(rule.mintToken, 0, mintData, Enum.Operation.Call), "Could not execute token minting");
 
-        // solium-disable-next-line security/no-tx-origin
-        bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", tx.origin, _requestedReward);
-        require(manager.execTransactionFromModule(rule.sourceToken, 0, transferData, Enum.Operation.Call), "Could not execute token transfer");
+        if (_requestedReward > 0) {
+            // solium-disable-next-line security/no-tx-origin
+            bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", tx.origin, _requestedReward);
+            // solium-disable-next-line security/no-tx-origin
+            uint256 initialBalance = Token(rule.sourceToken).balanceOf(tx.origin);
+            require(manager.execTransactionFromModule(rule.sourceToken, 0, transferData, Enum.Operation.Call), "Could not execute token transfer");
+            // solium-disable-next-line security/no-tx-origin
+            require(Token(rule.sourceToken).balanceOf(tx.origin) == initialBalance.add(_requestedReward), "Not enough tokens transfered");
+        }
     }
 
 
