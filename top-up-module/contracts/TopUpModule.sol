@@ -70,9 +70,9 @@ contract TopUpModule is Module {
 
         if (_requestedReward > 0) {
             // solium-disable-next-line security/no-tx-origin
-            bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", tx.origin, _requestedReward);
-            // solium-disable-next-line security/no-tx-origin
             uint256 initialBalance = Token(rule.sourceToken).balanceOf(tx.origin);
+            // solium-disable-next-line security/no-tx-origin
+            bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", tx.origin, _requestedReward);
             require(manager.execTransactionFromModule(rule.sourceToken, 0, transferData, Enum.Operation.Call), "Could not execute token transfer");
             // solium-disable-next-line security/no-tx-origin
             require(Token(rule.sourceToken).balanceOf(tx.origin) == initialBalance.add(_requestedReward), "Not enough tokens transfered");

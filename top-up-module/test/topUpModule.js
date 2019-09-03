@@ -97,6 +97,32 @@ contract('TopUpModule', function(accounts) {
             mintToken: mintToken.address,
             minTransferAmount: 10000,
             maxTriggerReward: 100,
+            noTransferAmount: 0
+        }])
+        let modules = await gnosisSafe.getModules()
+        let topUpModule = await TopUpModule.at(modules[0])
+        assert.equal(await topUpModule.manager(), gnosisSafe.address)
+        console.log(await topUpModule.listRules())
+        await sourceToken.transfer(gnosisSafe.address, 1000, {from: accounts[0]}) 
+        assert.equal(await sourceToken.balanceOf(gnosisSafe.address), 1000)
+        assert.equal(await mintToken.balanceOf(gnosisSafe.address), 0)
+        utils.assertRejects(topUpModule.executeTopUp(0, 0), "Should not allow with too low balance")
+        await sourceToken.transfer(gnosisSafe.address, 9000, {from: accounts[0]}) 
+        utils.assertRejects(topUpModule.executeTopUp(0, 101), "Should not allow with too high reward")
+        utils.logGasUsage("Execute topUp with reward", await topUpModule.executeTopUp(0, 100, {from: accounts[2]}))
+        assert.equal(await mintToken.balanceOf(gnosisSafe.address), 9900)
+        assert.equal(await sourceToken.balanceOf(gnosisSafe.address), 0)
+        assert.equal(await sourceToken.balanceOf(accounts[2]), 100)
+    })
+
+    it('execute with reward and noTransferAmount', async () => {
+        const sourceToken = await TestToken.new({from: accounts[0]})
+        const mintToken = await TestCompound.new(sourceToken.address)
+        await deployModule([{ 
+            sourceToken: sourceToken.address,
+            mintToken: mintToken.address,
+            minTransferAmount: 10000,
+            maxTriggerReward: 100,
             noTransferAmount: 100
         }])
         let modules = await gnosisSafe.getModules()
